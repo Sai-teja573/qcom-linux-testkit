@@ -30,61 +30,46 @@ fi
 . "$TOOLS/functestlib.sh"
 
 TESTNAME="cdsp_remoteproc"
+firmware_name="cdsp"
+res_file="./$TESTNAME.res"
+LOG_FILE="./$TESTNAME.log"
+
+exec > >(tee -a "$LOG_FILE") 2>&1
+
 test_path=$(find_test_case_by_name "$TESTNAME")
 cd "$test_path" || exit 1
-# shellcheck disable=SC2034
-res_file="./$TESTNAME.res"
 
 log_info "-----------------------------------------------------------------------------------------"
 log_info "-------------------Starting $TESTNAME Testcase----------------------------"
 log_info "=== Test Initialization ==="
-
-# Get the firmware output and find the position of cdsp
 log_info "Get the firmware output and find the position of cdsp"
-firmware_output=$(cat /sys/class/remoteproc/remoteproc*/firmware)
-cdsp_position=$(echo "$firmware_output" | grep -n "cdsp" | cut -d: -f1)
 
-# Adjust the position to match the remoteproc numbering (starting from 0)
-remoteproc_number=$((cdsp_position - 1))
-
-# Construct the remoteproc path based on the cdsp position
-remoteproc_path="/sys/class/remoteproc/remoteproc${remoteproc_number}"
-
-# Execute command 1 and check if the output is "running"
-state1=$(cat ${remoteproc_path}/state)
-if [ "$state1" != "running" ]; then
-    log_fail "$TESTNAME : Test Failed"
-    echo "$TESTNAME FAIL" > $test_path/$TESTNAME.res
-    exit 1
-fi
-
-# Execute command 2 (no output expected)
-echo stop > ${remoteproc_path}/state
-
-# Execute command 3 and check if the output is "offline"
-state3=$(cat ${remoteproc_path}/state)
-if [ "$state3" != "offline" ]; then
-    log_fail "cdsp stop failed"
-    echo "$TESTNAME FAIL" > $test_path/$TESTNAME.res
-    exit 1
+if validate_remoteproc_running "$firmware_name" "$LOG_FILE"; then
+    log_pass "$firmware_name remoteproc validated as running"
+    echo "$TESTNAME PASS" > "$res_file"
 else
-    log_pass "cdsp stop successful"
+    log_fail "$firmware_name remoteproc failed validation"
+    echo "$TESTNAME FAIL" > "$res_file"
 fi
-log_info "Restarting remoteproc"
-# Execute command 4 (no output expected)
-echo start > ${remoteproc_path}/state
+# At this point we are sure: path exists and is in running state
+rproc_path=$(get_remoteproc_path_by_firmware "$firmware_name")
 
-# Execute command 5 and check if the output is "running"
-state5=$(cat ${remoteproc_path}/state)
-if [ "$state5" != "running" ]; then
-    log_fail "cdsp start failed"
+stop_remoteproc "$rproc_path" || {
+    log_fail "$TESTNAME" "stop failed"
     echo "$TESTNAME FAIL" > "$res_file"
     exit 1
-fi
+}
+log_pass "cdsp stop successful"
 
-# If all checks pass, print "PASS"
+log_info "Restarting remoteproc"
+start_remoteproc "$rproc_path" || {
+    log_fail "$TESTNAME" "start failed"
+    echo "$TESTNAME FAIL" > "$res_file"
+    exit 1
+}
+
 echo "cdsp PASS"
 log_pass "cdsp PASS"
-echo "$TESTNAME PASS" > "$res_file" 
+echo "$TESTNAME PASS" > "$res_file"
 log_info "-------------------Completed $TESTNAME Testcase----------------------------"
 exit 0

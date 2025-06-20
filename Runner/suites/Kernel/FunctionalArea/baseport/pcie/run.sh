@@ -29,48 +29,51 @@ fi
 # shellcheck disable=SC1090,SC1091
 . "$TOOLS/functestlib.sh"
 
-TESTNAME="adsp_remoteproc"
-firmware_name="adsp"
-res_file="./$TESTNAME.res"
-LOG_FILE="./$TESTNAME.log"
-
-exec > >(tee -a "$LOG_FILE") 2>&1
-
+TESTNAME="pcie"
 test_path=$(find_test_case_by_name "$TESTNAME")
 cd "$test_path" || exit 1
+res_file="./$TESTNAME.res"
 
 log_info "-----------------------------------------------------------------------------------------"
 log_info "-------------------Starting $TESTNAME Testcase----------------------------"
 log_info "=== Test Initialization ==="
-log_info "Get the firmware output and find the position of adsp"
+log_info "Checking if required tools are available"
 
-if validate_remoteproc_running "$firmware_name" "$LOG_FILE"; then
-    log_pass "$firmware_name remoteproc validated as running"
-    echo "$TESTNAME PASS" > "$res_file"
+check_dependencies "lspci"
+log_info "Running PCIe "
+lspci_output=$(lspci -vvv)
+
+missing=""
+
+if echo "$lspci_output" | grep -q "Device tree node:"; then
+    log_info "Yes, 'Device tree node:' is found"
 else
-    log_fail "$firmware_name remoteproc failed validation"
-    echo "$TESTNAME FAIL" > "$res_file"
+    log_warn "No, 'Device tree node:' is missing"
+    missing=1
 fi
-# At this point we are sure: path exists and is in running state
-rproc_path=$(get_remoteproc_path_by_firmware "$firmware_name")
 
+if echo "$lspci_output" | grep -q "Capabilities:"; then
+    log_info "Yes, 'Capabilities:' is found"
+else
+    log_warn "No, 'Capabilities:' is missing"
+    missing=1
+fi
 
-stop_remoteproc "$rproc_path" || {
-    log_fail "$TESTNAME" "stop failed"
+if echo "$lspci_output" | grep -q "Kernel driver in use:"; then
+    log_info "Yes, 'Kernel driver in use:' is found"
+else
+    log_warn "No, 'Kernel driver in use:' is missing"
+    missing=1
+fi
+
+if [ -z "$missing" ]; then
+    log_pass "$TESTNAME : Test Passed"
+    echo "$TESTNAME PASS" > "$res_file"
+    exit 0
+else
+    log_fail "$TESTNAME : Test Failed"
     echo "$TESTNAME FAIL" > "$res_file"
     exit 1
-}
-log_pass "adsp stop successful"
+fi
 
-log_info "Restarting remoteproc"
-start_remoteproc "$rproc_path" || {
-    log_fail "$TESTNAME" "start failed"
-    echo "$TESTNAME FAIL" > "$res_file"
-    exit 1
-}
-
-echo "adsp PASS"
-log_pass "adsp PASS"
-echo "$TESTNAME PASS" > "$res_file"
 log_info "-------------------Completed $TESTNAME Testcase----------------------------"
-exit 0
