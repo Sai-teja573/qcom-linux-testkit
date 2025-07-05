@@ -16,8 +16,31 @@ run:
     - cd Runner
 
     # Existing tests
-    - $PWD/suites/Kernel/FunctionalArea/baseport/force_kernel_panic/run.sh || true
-    - $PWD/utils/send-to-lava.sh $PWD/suites/Kernel/FunctionalArea/baseport/force_kernel_panic/force_kernel_panic.res || true
+    - $PWD/suites/Kernel/FunctionalArea/baseport/adsp_remoteproc/run.sh || true
+    - $PWD/utils/send-to-lava.sh $PWD/suites/Kernel/FunctionalArea/baseport/adsp_remoteproc/adsp_remoteproc.res || true
+
+    - $PWD/suites/Kernel/FunctionalArea/baseport/cdsp_remoteproc/run.sh || true
+    - $PWD/utils/send-to-lava.sh $PWD/suites/Kernel/FunctionalArea/baseport/cdsp_remoteproc/cdsp_remoteproc.res || true
+
+    - $PWD/suites/Kernel/FunctionalArea/baseport/wpss_remoteproc/run.sh || true
+    - $PWD/utils/send-to-lava.sh $PWD/suites/Kernel/FunctionalArea/baseport/wpss_remoteproc/wpss_remoteproc.res || true
+
+    # Additional tests
+    - $PWD/suites/Kernel/FunctionalArea/baseport/gdsp_remoteproc/run.sh || true
+    - $PWD/utils/send-to-lava.sh $PWD/suites/Kernel/FunctionalArea/baseport/gdsp_remoteproc/gdsp_remoteproc.res || true
+
+    - $PWD/suites/Kernel/FunctionalArea/baseport/pcie/run.sh || true
+    - $PWD/utils/send-to-lava.sh $PWD/suites/Kernel/FunctionalArea/baseport/pcie/pcie.res || true
+
+    - $PWD/suites/Kernel/FunctionalArea/baseport/shmbridge/run.sh || true
+    - $PWD/utils/send-to-lava.sh $PWD/suites/Kernel/FunctionalArea/baseport/shmbridge/shmbridge.res || true
+
+    - $PWD/suites/Kernel/FunctionalArea/baseport/etm/run.sh || true
+    - $PWD/utils/send-to-lava.sh $PWD/suites/Kernel/FunctionalArea/baseport/etm/etm_trace.res || true
+
+    - $PWD/suites/Kernel/FunctionalArea/baseport/stm/run.sh || true
+    - $PWD/utils/send-to-lava.sh $PWD/suites/Kernel/FunctionalArea/baseport/stm/stm_cpu.res || true
+
     # Final result parsing
     - $PWD/utils/result_parse.sh
 
